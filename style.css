@@ -1,0 +1,23 @@
+body { 
+  background-color: black;
+  /* width: 600px;  */
+  margin: 10rem auto;  
+}
+
+.container {
+  display: flex; 
+  justify-content: center;
+}
+
+.button {
+  width: 12rem;
+  height: 8rem;
+  font-size: 3rem;
+  transition-duration: 0.4s;
+  margin: 10px;
+}
+
+.button:hover {
+  background-color: #4CAF50; /* Green */
+  color: black;
+}
