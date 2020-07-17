@@ -1,0 +1,15 @@
+{
+  "name": "hello_wasm_cpal",
+  "collaborators": [
+    "JoshuaBatty <joshpbatty@gmail.com>"
+  ],
+  "version": "0.1.0",
+  "files": [
+    "hello_wasm_cpal_bg.wasm",
+    "hello_wasm_cpal.js",
+    "hello_wasm_cpal.d.ts"
+  ],
+  "module": "hello_wasm_cpal.js",
+  "types": "hello_wasm_cpal.d.ts",
+  "sideEffects": false
+}
