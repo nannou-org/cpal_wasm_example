@@ -17,6 +17,7 @@ lto = true
 #default = ["wee_alloc"]
 
 [dependencies]
+hound = "3.4"
 cpal = { version = "0.12.0", features = ["wasm-bindgen"] }
 # The `wasm-bindgen` crate provides the bare minimum functionality needed
 # to interact with JavaScript.

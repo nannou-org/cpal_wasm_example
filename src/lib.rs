@@ -33,11 +33,21 @@ pub fn start() -> Handle {
         .default_output_device()
         .expect("failed to find a default output device");
     let config = device.default_output_config().unwrap();
+    let sample_format = config.sample_format();
+    let mut config: cpal::StreamConfig = config.into();
+    
+    let bytes = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/assets/cpal_wasm_demo.wav"));
+    let mut reader = hound::WavReader::new(&bytes[..]).unwrap();
 
-    Handle(match config.sample_format() {
-        cpal::SampleFormat::F32 => run::<f32>(&device, &config.into()),
-        cpal::SampleFormat::I16 => run::<i16>(&device, &config.into()),
-        cpal::SampleFormat::U16 => run::<u16>(&device, &config.into()),
+    let spec = reader.spec();
+    config.sample_rate = cpal::SampleRate(spec.sample_rate);
+
+    let s : Vec<_> = reader.samples::<i16>().map(|s| s.unwrap()).collect();
+
+    Handle(match sample_format {
+        cpal::SampleFormat::F32 => run::<f32>(&device, &config.into(), s),
+        cpal::SampleFormat::I16 => run::<i16>(&device, &config.into(), s),
+        cpal::SampleFormat::U16 => run::<u16>(&device, &config.into(), s),
     })
 }
 
@@ -46,26 +56,20 @@ pub fn stop(handle: Handle) {
     
 }
 
-fn run<T>(device: &cpal::Device, config: &cpal::StreamConfig) -> Stream
+fn run<T>(device: &cpal::Device, config: &cpal::StreamConfig, samples: Vec<i16>) -> Stream
 where
     T: cpal::Sample,
 {
-    let sample_rate = config.sample_rate.0 as f32;
     let channels = config.channels as usize;
 
-    // Produce a sinusoid of maximum amplitude.
-    let mut sample_clock = 0f32;
-    let mut next_value = move || {
-        sample_clock = (sample_clock + 1.0) % sample_rate;
-        (sample_clock * 440.0 * 2.0 * 3.141592 / sample_rate).sin()
-    };
+    let mut samples_iter = samples.into_iter().cycle();
 
     let err_fn = |err| console::error_1(&format!("an error occurred on stream: {}", err).into());
 
     let stream = device
         .build_output_stream(
             config,
-            move |data: &mut [T], _| write_data(data, channels, &mut next_value),
+            move |data: &mut [T], _| write_data(data, channels, &mut samples_iter),
             err_fn,
         )
         .unwrap();
@@ -73,12 +77,12 @@ where
     stream
 }
 
-fn write_data<T>(output: &mut [T], channels: usize, next_sample: &mut dyn FnMut() -> f32)
+fn write_data<T>(output: &mut [T], channels: usize, samples: &mut dyn Iterator<Item = i16>)
 where
     T: cpal::Sample,
 {
     for frame in output.chunks_mut(channels) {
-        let value: T = cpal::Sample::from::<f32>(&next_sample());
+        let value: T = cpal::Sample::from::<i16>(&samples.next().unwrap());
         for sample in frame.iter_mut() {
             *sample = value;
         }
